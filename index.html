@@ -72,6 +72,17 @@ button{font:inherit;color:inherit;cursor:pointer}
 .empty{text-align:center;padding:40px 24px;color:var(--muted)}
 .empty .btn{margin-top:18px}
 
+.section-head{width:100%;text-align:center;margin:26px 0 0;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.08em;font-size:14px;display:flex;align-items:center;gap:10px}
+.section-head::before,.section-head::after{content:"";flex:1;height:2px;background:var(--line)}
+.section-head b{color:var(--ink);font-size:20px;letter-spacing:0;text-transform:none;display:block}
+.section-head:first-child{margin-top:4px}
+.list-card{width:100%;display:flex;align-items:center;gap:12px;text-align:left;border:2px solid var(--line);border-bottom-width:4px;border-radius:16px;background:#fff;padding:12px 14px;margin-bottom:10px}
+.list-card .lc-n{width:32px;height:32px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;flex:none}
+.list-card .lc-t{flex:1;min-width:0}
+.list-card .lc-t b{display:block;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list-card .lc-t small{color:var(--muted);font-size:13px}
+.list-card .lc-e{color:var(--blue);font-weight:900;text-transform:uppercase;font-size:13px;letter-spacing:.05em}
+
 /* ---------- sheets / modals ---------- */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:none;align-items:flex-end;justify-content:center}
 .overlay.on{display:flex;animation:fade .15s}
@@ -259,16 +270,14 @@ textarea{min-height:130px;resize:vertical}
   <h3>Settings</h3>
   <label class="f">Player name</label>
   <input type="text" id="setName" maxlength="24">
-  <label class="f">Word list
-    <small>Separate words with commas. Add a picture with <b>=</b>, e.g. <b>apple=🍎, rocket=🚀</b>. Common words get a picture automatically.</small></label>
-  <textarea id="setWords" spellcheck="false" autocapitalize="off"></textarea>
-  <div class="note" id="wordCount"></div>
-  <label class="f">Sentences <span style="font-weight:700;color:var(--muted)">(optional)</span>
-    <small>One per line. Each sentence is used for any list word it contains, e.g. <b>My friend is funny.</b> Good for words without pictures.</small></label>
-  <textarea id="setSents" spellcheck="false" style="min-height:100px" placeholder="The cat is on the bed.&#10;I can see the moon."></textarea>
-  <div class="note" id="sentCount"></div>
-  <label class="f">Words per unit</label>
+  <label class="f">Word lists
+    <small>Each list is its own section, after the ones above it. Adding a list never changes progress on earlier sections.</small></label>
+  <div id="listCards"></div>
+  <button class="btn ghost" id="addListBtn" style="margin-top:4px">+ Add a word list</button>
+  <label class="f">Words per unit
+    <small>Changing this regroups every list, so unit progress starts over (XP and streak stay).</small></label>
   <select id="setPer"><option>3</option><option>4</option><option>5</option><option>6</option><option>8</option></select>
+  <div class="toggle"><span>Unlock units in order</span><input type="checkbox" id="setLock" style="width:24px;height:24px"></div>
   <div class="toggle"><span>Sound effects</span><input type="checkbox" id="setSound" style="width:24px;height:24px"></div>
   <div class="row"><button class="btn ghost" id="setCancel">Cancel</button><button class="btn" id="setSave">Save</button></div>
   <div class="note" id="setNote"></div>
@@ -279,13 +288,38 @@ textarea{min-height:130px;resize:vertical}
   </div>
 </div></div>
 
+<!-- Word list editor -->
+<div class="overlay" id="listSheet"><div class="sheet">
+  <h3 id="listHead">New word list</h3>
+  <label class="f">Name</label>
+  <input type="text" id="listTitle" maxlength="40" placeholder="e.g. Animals, Week 3">
+  <label class="f">Words
+    <small>Separate with commas. Add a picture with <b>=</b>, e.g. <b>rocket=🚀</b>. Common words get a picture automatically.</small></label>
+  <textarea id="listWords" spellcheck="false" autocapitalize="off"></textarea>
+  <div class="note" id="listCount"></div>
+  <label class="f">Sentences <span style="font-weight:700;color:var(--muted)">(optional)</span>
+    <small>One per line. Used for sentence building with any word they contain, e.g. <b>My friend is funny.</b> Best for words without pictures.</small></label>
+  <textarea id="listSents" spellcheck="false" style="min-height:100px" placeholder="The cat is on the bed.&#10;I can see the moon."></textarea>
+  <div class="note" id="listSentCount"></div>
+  <p class="note" id="listRoNote" style="display:none">This list is built into the app. To change it, edit <b>wordlists.js</b> in the GitHub repo.</p>
+  <div class="note" id="listNote" style="color:var(--red-t)"></div>
+  <div class="row" style="margin-top:12px"><button class="btn ghost" id="listCancel">Back</button><button class="btn" id="listSave">Save list</button></div>
+  <button class="danger" id="listDelete" style="width:100%">Delete this list</button>
+  <div id="listDelConfirm" style="display:none">
+    <p style="color:var(--red-t)">Delete this list? Its section disappears (XP and streak stay).</p>
+    <div class="row"><button class="btn ghost" id="listDelNo">No</button><button class="btn red" id="listDelYes">Delete</button></div>
+  </div>
+</div></div>
+
 <canvas id="confetti"></canvas>
 
+<script src="wordlists.js"></script>
 <script>
 "use strict";
 /* =========================================================
    WORD QUEST — reading & spelling practice (no audio needed)
-   The word list and optional sentences live in Settings (⚙️).
+   Word lists come from wordlists.js (built in) plus any lists added
+   in Settings (⚙️). Each list is a section; units are made inside it.
    ========================================================= */
 const DEFAULT_WORDS = "cat, dog, sun, ball, apple, fish, tree, house, car, book, bird, star, moon, hat, cake, frog, duck, bus, egg, bed";
 const LEVELS = 3;               // lessons per unit
@@ -365,11 +399,23 @@ const store = {
 };
 
 /* ---------- state ---------- */
-const SHARED_KEYS = ["words","sentences","perUnit","name"];
-let settings = Object.assign({words:DEFAULT_WORDS, sentences:"", perUnit:5, name:"Mateo", sound:true}, store.get("wq_settings",{}));
+const SHARED_KEYS = ["lists","perUnit","name","lockOrder"];
+let settings = Object.assign({lists:[], perUnit:5, name:"Mateo", sound:true, lockOrder:true}, store.get("wq_settings",{}));
+// older saves kept a single word list in settings.words: turn it into an added list
+function migrateSettings(s){
+  if (!Array.isArray(s.lists)) s.lists = [];
+  if (typeof s.words === "string"){
+    if (s.words.trim() && s.words.trim() !== DEFAULT_WORDS) s.lists.unshift({id:"l-mine", title:"My words", words:s.words, sentences:s.sentences||""});
+    delete s.words; delete s.sentences;
+  }
+  if (s.lockOrder === undefined) s.lockOrder = true;
+  return s;
+}
+migrateSettings(settings);
+const same = (a,b) => JSON.stringify(a) === JSON.stringify(b);
 const defaultProgress = () => ({xp:0, streak:0, lastDay:null, lessons:{}, words:{}, updatedAt:0});
 let progress = Object.assign(defaultProgress(), store.get("wq_progress",{}));
-let WORDS = [], UNITS = [], SENT = {};   // SENT: word key -> {own:[...], auto:[...]}
+let WORDS = [], UNITS = [], UMETA = [], SECTIONS = [], SENT = {};   // SENT: word key -> {own:[...], auto:[...]}
 
 function parseWords(s){
   const seen = new Set(), out = [];
@@ -389,14 +435,26 @@ function parseWords(s){
 function parseSentences(s){
   return String(s||"").split(/\n+/).map(x => x.trim().replace(/\s+/g," ")).filter(x => x.split(" ").length >= 2);
 }
+// built-in lists (wordlists.js) first, then lists added on this device, in order
+function allLists(){
+  const b = Array.isArray(window.WORD_LISTS) && window.WORD_LISTS.length ? window.WORD_LISTS : [{title:"Starter words", words:DEFAULT_WORDS}];
+  return b.map((l,i) => ({id:"builtin-"+i, title:l.title||("List "+(i+1)), words:l.words||"", sentences:l.sentences||"", builtin:true}))
+    .concat((settings.lists||[]).map(l => Object.assign({}, l, {builtin:false})));
+}
 function rebuild(){
-  WORDS = parseWords(settings.words);
-  const per = Math.max(2, parseInt(settings.perUnit)||5);
-  UNITS = [];
-  for (let i=0;i<WORDS.length;i+=per) UNITS.push(WORDS.slice(i,i+per));
-  if (UNITS.length>1 && UNITS[UNITS.length-1].length===1) UNITS[UNITS.length-2].push(UNITS.pop()[0]);
+  const per = Math.max(2, parseInt(settings.perUnit)||5), lists = allLists(), seen = new Map();
+  UNITS = []; UMETA = []; SECTIONS = [];
+  lists.forEach(l => {
+    const ws = parseWords(l.words).map(w => seen.get(w.key) || (seen.set(w.key, w), w));
+    if (!ws.length) return;
+    const sec = {title:l.title, first:UNITS.length, count:0};
+    // units are cut inside each list only, so a new list never reshuffles earlier ones
+    for (let i=0;i<ws.length;i+=per){ UNITS.push(ws.slice(i,i+per)); UMETA.push({s:SECTIONS.length, n:sec.count++}); }
+    SECTIONS.push(sec);
+  });
+  WORDS = [...seen.values()];
   SENT = {};
-  const own = parseSentences(settings.sentences);
+  const own = parseSentences(lists.map(l => l.sentences||"").join("\n"));
   WORDS.forEach(w => {
     const mine = own.filter(s => wordRe(w.text).test(s));
     const auto = w.cat ? TEMPLATES[w.cat].map(t => t.replace("{a}", article(w.text)).replace("{w}", w.text)) : [];
@@ -413,7 +471,7 @@ function sentenceFor(w, maxTokens, ownOnly){
 }
 const unitId = u => UNITS[u].map(w=>w.key).join("|");   // progress follows the words, so editing the list starts new units fresh
 const levelsDone = u => Math.min(LEVELS, progress.lessons[unitId(u)]||0);
-const unitUnlocked = u => u===0 || levelsDone(u-1) >= LEVELS;
+const unitUnlocked = u => u===0 || settings.lockOrder===false || levelsDone(u-1) >= LEVELS;
 const wstat = k => progress.words[k] || (progress.words[k] = {seen:0, right:0, wrong:0, s:0});
 
 /* ---------- cloud sync (artifact db), with localStorage fallback ---------- */
@@ -430,7 +488,8 @@ function saveProgress(){
 function applyShared(d){
   if (!d) return false;
   let changed = false;
-  SHARED_KEYS.forEach(k => { if (d[k] !== undefined && d[k] !== settings[k]){ settings[k] = d[k]; changed = true; } });
+  d = migrateSettings(JSON.parse(JSON.stringify(d)));
+  SHARED_KEYS.forEach(k => { if (d[k] !== undefined && !same(d[k], settings[k])){ settings[k] = d[k]; changed = true; } });
   if (changed){ saveLocal(); rebuild(); }
   return changed;
 }
@@ -532,17 +591,18 @@ function renderHome(){
   const offsets = [0,48,72,48,0,-48,-72,-48];
   let html = "", n = 0, currentFound = false;
   UNITS.forEach((unit,u) => {
-    const color = UNIT_COLORS[u % UNIT_COLORS.length], open = unitUnlocked(u), done = levelsDone(u);
+    const color = UNIT_COLORS[u % UNIT_COLORS.length], open = unitUnlocked(u), done = levelsDone(u), m = UMETA[u];
+    if (m.n===0) html += `<div class="section-head"><span>Section ${m.s+1}<b>${esc(SECTIONS[m.s].title)}</b></span></div>`;
     html += `<div class="unit-banner ${open?"":"locked"}" style="background:${color}">
-      <div class="u-t">Unit ${u+1}</div><div class="u-w">${unit.map(w=>esc(w.text)).join(" · ")}</div></div>`;
+      <div class="u-t">Unit ${m.n+1}</div><div class="u-w">${unit.map(w=>esc(w.text)).join(" · ")}</div></div>`;
     for (let lv=0; lv<LEVELS; lv++){
-      const isDone = lv < done, isCur = open && lv===done && !currentFound;
+      const isDone = lv < done, isNext = open && lv===done, isCur = isNext && !currentFound;
       if (isCur) currentFound = true;
-      const locked = !open || (!isDone && !isCur);
+      const locked = !open || (!isDone && !isNext);
       html += `<div class="node-wrap" style="transform:translateX(${offsets[n%8]}px)">
         ${isCur ? '<div class="start-bubble">START</div>' : ""}
         <button class="node ${isDone?"done":""} ${isCur?"current":""} ${locked?"locked":""}" style="background:${color}"
-          data-u="${u}" data-lv="${lv}" ${locked?'data-locked="1"':""} aria-label="Unit ${u+1} ${LEVEL_INFO[lv].name}">${locked && !isDone ? "🔒" : LEVEL_INFO[lv].icon}</button></div>`;
+          data-u="${u}" data-lv="${lv}" ${locked?'data-locked="1"':""} aria-label="Section ${m.s+1} unit ${m.n+1} ${LEVEL_INFO[lv].name}">${locked && !isDone ? "🔒" : LEVEL_INFO[lv].icon}</button></div>`;
       n++;
     }
     html += `<div class="trophy ${done>=LEVELS?"won":""}">🏆</div>`;
@@ -551,6 +611,8 @@ function renderHome(){
   html += `<div class="practice-card"><div style="font-size:38px">💪</div><div class="pc-t"><b>Practice</b><span>${learned ? "Review the tricky words" : "Finish a lesson first"}</span></div>
     <button class="btn blue" id="practiceBtn" ${learned>=2?"":"disabled"}>Go</button></div>`;
   P.innerHTML = html;
+  const cur = P.querySelector(".node.current");
+  if (cur && !renderHome.scrolled){ renderHome.scrolled = true; setTimeout(() => cur.scrollIntoView({block:"center"}), 50); }
 }
 $("path").addEventListener("click", e => {
   const b = e.target.closest(".node");
@@ -564,7 +626,7 @@ $("path").addEventListener("click", e => {
 });
 function openStart(u, lv){
   const words = u<0 ? practiceWords() : UNITS[u];
-  const title = u<0 ? "Practice" : `Unit ${u+1} · ${LEVEL_INFO[lv].name}`;
+  const title = u<0 ? "Practice" : `${esc(SECTIONS[UMETA[u].s].title)} · Unit ${UMETA[u].n+1} · ${LEVEL_INFO[lv].name}`;
   const desc = u<0 ? "Let's review some tricky words!" : LEVEL_INFO[lv].desc + (lv < levelsDone(u) ? " (replay)" : "");
   $("startSheetBody").innerHTML = `<h3>${title}</h3><p>${desc}</p>
     <div class="chips">${words.map(w=>`<span class="chip">${w.emoji?esc(w.emoji)+" ":""}${esc(w.text)}</span>`).join("")}</div>
@@ -968,34 +1030,78 @@ $("gateIn").addEventListener("keydown", e => { if (e.key==="Enter") gateGo(); })
 
 function openSettings(){
   $("setName").value = settings.name || "";
-  $("setWords").value = settings.words;
-  $("setSents").value = settings.sentences || "";
   $("setPer").value = String(settings.perUnit);
   $("setSound").checked = !!settings.sound;
+  $("setLock").checked = settings.lockOrder !== false;
   $("setNote").textContent = ""; $("resetConfirm").style.display = "none"; $("resetBtn").style.display = "";
-  countWords(); openOv("setSheet");
+  renderListCards(); openOv("setSheet");
 }
-function countWords(){
-  const ws = parseWords($("setWords").value), ss = parseSentences($("setSents").value);
-  const pics = ws.filter(w=>w.emoji).length, auto = ws.filter(w=>w.cat).length;
-  $("wordCount").textContent = `${ws.length} words · ${pics} with pictures · ${auto} get sentences automatically`;
-  const used = ss.filter(s => ws.some(w => wordRe(w.text).test(s))).length;
-  $("sentCount").textContent = ss.length ? `${ss.length} sentences · ${used} use a word from the list` : "";
+function renderListCards(){
+  $("listCards").innerHTML = allLists().map((l,i) => {
+    const n = parseWords(l.words).length;
+    return `<button class="list-card" data-list="${esc(l.id)}"><span class="lc-n">${i+1}</span>
+      <span class="lc-t"><b>${esc(l.title)}</b><small>${n} word${n===1?"":"s"}${l.builtin?" · built in":""}</small></span>
+      <span class="lc-e">${l.builtin?"View":"Edit"}</span></button>`;
+  }).join("");
 }
-$("setWords").addEventListener("input", countWords);
-$("setSents").addEventListener("input", countWords);
+$("listCards").addEventListener("click", e => { const c = e.target.closest("[data-list]"); if (c){ sfx.tap(); openListEditor(c.dataset.list); } });
+$("addListBtn").onclick = () => { sfx.tap(); openListEditor(null); };
 $("setCancel").onclick = () => closeOv("setSheet");
 $("setSave").onclick = async () => {
   settings.name = $("setName").value.trim();
-  settings.words = $("setWords").value;
-  settings.sentences = $("setSents").value;
   settings.perUnit = parseInt($("setPer").value)||5;
   settings.sound = $("setSound").checked;
+  settings.lockOrder = $("setLock").checked;
   rebuild(); renderHome();
   $("setNote").textContent = "Saving…";
   const where = await saveShared();
-  $("setNote").textContent = where==="cloud" ? "Saved ✓" : "Saved on this device ✓";
+  $("setNote").textContent = where==="cloud" ? "Saved ✓" : "Saved ✓";
   setTimeout(()=>closeOv("setSheet"), 500);
+};
+
+let editingList = null;
+function openListEditor(id){
+  const l = id ? allLists().find(x => x.id===id) : {id:null, title:"", words:"", sentences:"", builtin:false};
+  if (!l) return;
+  editingList = l;
+  $("listTitle").value = l.title; $("listWords").value = l.words; $("listSents").value = l.sentences || "";
+  const ro = !!l.builtin;
+  ["listTitle","listWords","listSents"].forEach(k => $(k).readOnly = ro);
+  $("listHead").textContent = ro ? "Built-in list" : (id ? "Edit word list" : "New word list");
+  $("listRoNote").style.display = ro ? "" : "none";
+  $("listSave").style.display = ro ? "none" : "";
+  $("listDelete").style.display = (!ro && id) ? "" : "none";
+  $("listDelConfirm").style.display = "none"; $("listNote").textContent = "";
+  countList(); closeOv("setSheet"); openOv("listSheet");
+}
+function countList(){
+  const ws = parseWords($("listWords").value), ss = parseSentences($("listSents").value);
+  const pics = ws.filter(w=>w.emoji).length, auto = ws.filter(w=>w.cat).length;
+  $("listCount").textContent = `${ws.length} words · ${pics} with pictures · ${auto} get sentences automatically`;
+  const used = ss.filter(s => ws.some(w => wordRe(w.text).test(s))).length;
+  $("listSentCount").textContent = ss.length ? `${ss.length} sentences · ${used} use a word from this list` : "";
+}
+$("listWords").addEventListener("input", countList);
+$("listSents").addEventListener("input", countList);
+function backToSettings(){ closeOv("listSheet"); openSettings(); }
+$("listCancel").onclick = backToSettings;
+$("listSave").onclick = async () => {
+  const words = $("listWords").value, sentences = $("listSents").value;
+  if (!parseWords(words).length){ $("listNote").textContent = "Add at least one word."; return; }
+  const lists = (settings.lists||[]).slice();
+  const title = $("listTitle").value.trim() || ("List " + (allLists().length + (editingList.id ? 0 : 1)));
+  if (editingList.id){
+    const i = lists.findIndex(x => x.id===editingList.id);
+    if (i >= 0) lists[i] = Object.assign({}, lists[i], {title, words, sentences});
+  } else lists.push({id:"l" + Date.now().toString(36), title, words, sentences});
+  settings.lists = lists;
+  rebuild(); renderHome(); await saveShared(); backToSettings();
+};
+$("listDelete").onclick = () => { $("listDelConfirm").style.display = ""; $("listDelete").style.display = "none"; };
+$("listDelNo").onclick = () => { $("listDelConfirm").style.display = "none"; $("listDelete").style.display = ""; };
+$("listDelYes").onclick = async () => {
+  settings.lists = (settings.lists||[]).filter(x => x.id !== editingList.id);
+  rebuild(); renderHome(); await saveShared(); backToSettings();
 };
 $("resetBtn").onclick = () => { $("resetConfirm").style.display = ""; $("resetBtn").style.display = "none"; };
 $("resetNo").onclick = () => { $("resetConfirm").style.display = "none"; $("resetBtn").style.display = ""; };
@@ -1011,7 +1117,7 @@ document.addEventListener("visibilitychange", () => {
   const p = store.get("wq_progress", null);
   if (p && (p.updatedAt||0) > (progress.updatedAt||0)){ progress = Object.assign(defaultProgress(), p); }
   const s = store.get("wq_settings", null);
-  if (s && SHARED_KEYS.some(k => s[k] !== undefined && s[k] !== settings[k])){ settings = Object.assign(settings, s); rebuild(); }
+  if (s){ migrateSettings(s); if (SHARED_KEYS.some(k => s[k] !== undefined && !same(s[k], settings[k]))){ settings = Object.assign(settings, s); rebuild(); } }
   renderHome();
 });
 rebuild(); renderHome();

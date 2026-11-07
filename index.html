@@ -76,6 +76,14 @@ button{font:inherit;color:inherit;cursor:pointer}
 .section-head::before,.section-head::after{content:"";flex:1;height:2px;background:var(--line)}
 .section-head b{color:var(--ink);font-size:20px;letter-spacing:0;text-transform:none;display:block}
 .section-head:first-child{margin-top:4px}
+.info{background:var(--blue-bg);color:var(--blue-d);border-radius:14px;padding:12px 14px;font-size:15px;margin:8px 0 4px}
+.linkbtn{border:none;background:none;color:var(--blue);font-weight:900;padding:4px 0;text-decoration:underline;font-size:15px}
+.parent-bar{display:flex;align-items:center;gap:10px;background:#fff6d6;border:2px solid #ffe08a;border-radius:14px;padding:10px 14px;margin:8px 0 4px}
+.parent-bar span{flex:1} .parent-bar small{display:block;color:#9a7400;font-size:13px}
+.signin{border:2px solid var(--line);border-radius:16px;padding:14px;margin:10px 0}
+.signin h4{margin:0 0 6px;font-size:18px} .signin p,.signin ol{margin:0 0 10px;color:var(--muted);font-size:14px}
+.signin ol{padding-left:20px} .signin li{margin:3px 0} .signin a{color:var(--blue);font-weight:900}
+input:disabled,select:disabled{opacity:.6}
 .list-card{width:100%;display:flex;align-items:center;gap:12px;text-align:left;border:2px solid var(--line);border-bottom-width:4px;border-radius:16px;background:#fff;padding:12px 14px;margin-bottom:10px}
 .list-card .lc-n{width:32px;height:32px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;flex:none}
 .list-card .lc-t{flex:1;min-width:0}
@@ -100,7 +108,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .row .btn{flex:1}
 label.f{display:block;font-weight:900;margin:14px 0 6px}
 label.f small{display:block;color:var(--muted);font-weight:700;font-size:13px}
-textarea,input[type=text],input[type=number],select{width:100%;font:inherit;font-weight:700;font-size:16px;border:2px solid var(--line);border-radius:14px;padding:12px;background:#f7f7f7;color:var(--ink);-webkit-user-select:text;user-select:text}
+textarea,input[type=text],input[type=number],input[type=password],select{width:100%;font:inherit;font-weight:700;font-size:16px;border:2px solid var(--line);border-radius:14px;padding:12px;background:#f7f7f7;color:var(--ink);-webkit-user-select:text;user-select:text}
 textarea{min-height:130px;resize:vertical}
 .toggle{display:flex;align-items:center;justify-content:space-between;margin:14px 0}
 .note{font-size:13px;color:var(--muted);margin-top:8px;min-height:1em}
@@ -268,6 +276,21 @@ textarea{min-height:130px;resize:vertical}
 <!-- Settings -->
 <div class="overlay" id="setSheet"><div class="sheet">
   <h3>Settings</h3>
+  <div class="parent-bar" id="parentBar" style="display:none"><span>👑 <b>Parent mode</b><small>Changes go to every device</small></span><button class="linkbtn" id="signOutBtn">Sign out</button></div>
+  <div class="info" id="kidNote">Word lists and game options are set from the parent's device.
+    <button class="linkbtn" id="signInOpen">Parent sign-in</button></div>
+  <div class="signin" id="signinBox" style="display:none">
+    <h4>Parent sign-in</h4>
+    <p>Paste a GitHub token that can save to <b>jonomf/duo-teo</b>. Only do this on your own phone or computer, not the kid's device.</p>
+    <ol>
+      <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Create a fine-grained token ↗</a></li>
+      <li>Repository access: <b>Only select repositories → duo-teo</b></li>
+      <li>Permissions: <b>Contents → Read and write</b></li>
+    </ol>
+    <input type="password" id="tokIn" placeholder="github_pat_…" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div class="note" id="tokNote"></div>
+    <div class="row" style="margin-top:10px"><button class="btn ghost" id="tokCancel">Cancel</button><button class="btn" id="tokGo">Sign in</button></div>
+  </div>
   <label class="f">Player name</label>
   <input type="text" id="setName" maxlength="24">
   <label class="f">Word lists
@@ -278,7 +301,7 @@ textarea{min-height:130px;resize:vertical}
     <small>Changing this regroups every list, so unit progress starts over (XP and streak stay).</small></label>
   <select id="setPer"><option>3</option><option>4</option><option>5</option><option>6</option><option>8</option></select>
   <div class="toggle"><span>Unlock units in order</span><input type="checkbox" id="setLock" style="width:24px;height:24px"></div>
-  <div class="toggle"><span>Sound effects</span><input type="checkbox" id="setSound" style="width:24px;height:24px"></div>
+  <div class="toggle"><span>Sound effects <small style="color:var(--muted)">(this device)</small></span><input type="checkbox" id="setSound" style="width:24px;height:24px"></div>
   <div class="row"><button class="btn ghost" id="setCancel">Cancel</button><button class="btn" id="setSave">Save</button></div>
   <div class="note" id="setNote"></div>
   <button class="danger" id="resetBtn">Reset progress</button>
@@ -301,25 +324,26 @@ textarea{min-height:130px;resize:vertical}
     <small>One per line. Used for sentence building with any word they contain, e.g. <b>My friend is funny.</b> Best for words without pictures.</small></label>
   <textarea id="listSents" spellcheck="false" style="min-height:100px" placeholder="The cat is on the bed.&#10;I can see the moon."></textarea>
   <div class="note" id="listSentCount"></div>
-  <p class="note" id="listRoNote" style="display:none">This list is built into the app. To change it, edit <b>wordlists.js</b> in the GitHub repo.</p>
+  <p class="note" id="listRoNote" style="display:none">Only the parent can change word lists. Sign in from Settings on your own device.</p>
   <div class="note" id="listNote" style="color:var(--red-t)"></div>
   <div class="row" style="margin-top:12px"><button class="btn ghost" id="listCancel">Back</button><button class="btn" id="listSave">Save list</button></div>
   <button class="danger" id="listDelete" style="width:100%">Delete this list</button>
   <div id="listDelConfirm" style="display:none">
-    <p style="color:var(--red-t)">Delete this list? Its section disappears (XP and streak stay).</p>
+    <p style="color:var(--red-t)">Delete this list from every device? Its section disappears (XP and streak stay).</p>
     <div class="row"><button class="btn ghost" id="listDelNo">No</button><button class="btn red" id="listDelYes">Delete</button></div>
   </div>
 </div></div>
 
 <canvas id="confetti"></canvas>
 
-<script src="wordlists.js"></script>
 <script>
 "use strict";
 /* =========================================================
    WORD QUEST — reading & spelling practice (no audio needed)
-   Word lists come from wordlists.js (built in) plus any lists added
-   in Settings (⚙️). Each list is a section; units are made inside it.
+   Word lists + game options live in lists.json in the GitHub repo.
+   The parent edits them in Parent mode (⚙️) on their own device;
+   every device pulls the latest copy when the game opens.
+   Each list is a section; units are made inside it.
    ========================================================= */
 const DEFAULT_WORDS = "cat, dog, sun, ball, apple, fish, tree, house, car, book, bird, star, moon, hat, cake, frog, duck, bus, egg, bed";
 const LEVELS = 3;               // lessons per unit
@@ -399,20 +423,25 @@ const store = {
 };
 
 /* ---------- state ---------- */
-const SHARED_KEYS = ["lists","perUnit","name","lockOrder"];
-let settings = Object.assign({lists:[], perUnit:5, name:"Mateo", sound:true, lockOrder:true}, store.get("wq_settings",{}));
-// older saves kept a single word list in settings.words: turn it into an added list
-function migrateSettings(s){
-  if (!Array.isArray(s.lists)) s.lists = [];
-  if (typeof s.words === "string"){
-    if (s.words.trim() && s.words.trim() !== DEFAULT_WORDS) s.lists.unshift({id:"l-mine", title:"My words", words:s.words, sentences:s.sentences||""});
-    delete s.words; delete s.sentences;
-  }
-  if (s.lockOrder === undefined) s.lockOrder = true;
-  return s;
-}
-migrateSettings(settings);
+const REPO = "jonomf/duo-teo", BRANCH = "main", CONFIG_PATH = "lists.json";
+const API = "https://api.github.com/repos/" + REPO;
+const CONFIG_KEYS = ["name","perUnit","lockOrder","lists"];
+const DEFAULT_CONFIG = {name:"Mateo", perUnit:5, lockOrder:true, lists:[{title:"Starter words", words:DEFAULT_WORDS, sentences:""}]};
 const same = (a,b) => JSON.stringify(a) === JSON.stringify(b);
+function cleanConfig(c){
+  c = c && typeof c === "object" ? c : {};
+  return {
+    name: typeof c.name === "string" ? c.name.slice(0,24) : DEFAULT_CONFIG.name,
+    perUnit: Math.min(12, Math.max(2, parseInt(c.perUnit)||5)),
+    lockOrder: c.lockOrder !== false,
+    lists: Array.isArray(c.lists)
+      ? c.lists.filter(l => l && typeof l === "object").map(l => ({title:String(l.title||"").slice(0,40), words:String(l.words||""), sentences:String(l.sentences||"")}))
+      : JSON.parse(JSON.stringify(DEFAULT_CONFIG.lists))
+  };
+}
+const configOf = s => { const c = {}; CONFIG_KEYS.forEach(k => c[k] = s[k]); return cleanConfig(JSON.parse(JSON.stringify(c))); };
+// settings = shared config (last copy fetched) + this device's own preferences
+let settings = Object.assign(cleanConfig(store.get("wq_config", DEFAULT_CONFIG)), {sound: store.get("wq_settings",{}).sound !== false});
 const defaultProgress = () => ({xp:0, streak:0, lastDay:null, lessons:{}, words:{}, updatedAt:0});
 let progress = Object.assign(defaultProgress(), store.get("wq_progress",{}));
 let WORDS = [], UNITS = [], UMETA = [], SECTIONS = [], SENT = {};   // SENT: word key -> {own:[...], auto:[...]}
@@ -435,11 +464,9 @@ function parseWords(s){
 function parseSentences(s){
   return String(s||"").split(/\n+/).map(x => x.trim().replace(/\s+/g," ")).filter(x => x.split(" ").length >= 2);
 }
-// built-in lists (wordlists.js) first, then lists added on this device, in order
 function allLists(){
-  const b = Array.isArray(window.WORD_LISTS) && window.WORD_LISTS.length ? window.WORD_LISTS : [{title:"Starter words", words:DEFAULT_WORDS}];
-  return b.map((l,i) => ({id:"builtin-"+i, title:l.title||("List "+(i+1)), words:l.words||"", sentences:l.sentences||"", builtin:true}))
-    .concat((settings.lists||[]).map(l => Object.assign({}, l, {builtin:false})));
+  const ls = settings.lists && settings.lists.length ? settings.lists : DEFAULT_CONFIG.lists;
+  return ls.map((l,i) => ({id:String(i), title:l.title||("List "+(i+1)), words:l.words||"", sentences:l.sentences||""}));
 }
 function rebuild(){
   const per = Math.max(2, parseInt(settings.perUnit)||5), lists = allLists(), seen = new Map();
@@ -474,56 +501,78 @@ const levelsDone = u => Math.min(LEVELS, progress.lessons[unitId(u)]||0);
 const unitUnlocked = u => u===0 || settings.lockOrder===false || levelsDone(u-1) >= LEVELS;
 const wstat = k => progress.words[k] || (progress.words[k] = {seen:0, right:0, wrong:0, s:0});
 
-/* ---------- cloud sync (artifact db), with localStorage fallback ---------- */
-let db = null, uid = null, writing = Promise.resolve(), pendingShared = null;
-function saveLocal(){ store.set("wq_settings", settings); store.set("wq_progress", progress); }
-function saveProgress(){
-  progress.updatedAt = Date.now();
-  saveLocal();
-  if (db && uid){
-    const body = JSON.parse(JSON.stringify(progress));
-    writing = writing.then(() => db.doc("data/users/"+uid+"/progress").set(body)).catch(()=>{});
-  }
+/* ---------- saving (this device) ---------- */
+function saveLocal(){ store.set("wq_settings", {sound: settings.sound}); store.set("wq_config", configOf(settings)); store.set("wq_progress", progress); }
+function saveProgress(){ progress.updatedAt = Date.now(); saveLocal(); }
+
+/* ---------- shared config: everyone reads lists.json, the parent writes it ---------- */
+let pendingConfig = null, fetching = null, lastFetch = 0;
+let adminToken = store.get("wq_admin_token", null);
+const authHeaders = (tok = adminToken) => tok ? {Authorization: "Bearer " + tok} : {};
+function applyConfig(c){
+  c = cleanConfig(c);
+  if (same(c, configOf(settings))) return false;
+  if (L){ pendingConfig = c; return false; }          // never swap words mid-lesson
+  Object.assign(settings, c); saveLocal(); rebuild();
+  if ($("home").classList.contains("on")) renderHome();
+  return true;
 }
-function applyShared(d){
-  if (!d) return false;
-  let changed = false;
-  d = migrateSettings(JSON.parse(JSON.stringify(d)));
-  SHARED_KEYS.forEach(k => { if (d[k] !== undefined && !same(d[k], settings[k])){ settings[k] = d[k]; changed = true; } });
-  if (changed){ saveLocal(); rebuild(); }
-  return changed;
+function fetchConfig(force){
+  if (fetching) return fetching;
+  if (!force && Date.now() - lastFetch < 15000) return Promise.resolve();
+  lastFetch = Date.now();
+  fetching = (async () => {
+    let cfg = null;
+    try{   // GitHub API: always the newest commit
+      const r = await fetch(`${API}/contents/${CONFIG_PATH}?ref=${BRANCH}`, {cache:"no-store", headers:Object.assign({Accept:"application/vnd.github.raw+json"}, authHeaders())});
+      if (r.ok) cfg = JSON.parse(await r.text());
+    }catch(e){}
+    if (!cfg){ try{   // fallback: the copy GitHub Pages serves next to this page
+      const r = await fetch(CONFIG_PATH + "?t=" + Date.now(), {cache:"no-store"});
+      if (r.ok) cfg = await r.json();
+    }catch(e){} }
+    if (cfg) applyConfig(cfg);   // offline: keep the last copy saved on this device
+  })().finally(() => { fetching = null; });
+  return fetching;
 }
-async function initCloud(){
+const b64 = s => { let bin = ""; for (const b of new TextEncoder().encode(s)) bin += String.fromCharCode(b); return btoa(bin); };
+async function verifyToken(tok){
   try{
-    if (!window.claude || typeof window.claude.use !== "function") return;
-    db = await window.claude.use("db");
-    if (!db) return;
-    const user = await window.claude.use("user");
-    if (user){ try{ uid = await user.id(); }catch(e){} }
-    db.doc("shared/settings").onSnapshot(snap => {
-      if (!snap.exists) return;
-      const d = snap.data();
-      if (L) { pendingShared = d; return; }     // never swap words mid-lesson
-      if (applyShared(d) && $("home").classList.contains("on")) renderHome();
-    }, () => {});
-    if (uid){
-      const ps = await db.doc("data/users/"+uid+"/progress").get();
-      if (ps.exists){
-        const d = ps.data();
-        if ((d.updatedAt||0) > (progress.updatedAt||0)){
-          progress = Object.assign(defaultProgress(), JSON.parse(JSON.stringify(d)));
-          saveLocal(); if (!L) renderHome();
-        } else if ((progress.updatedAt||0) > (d.updatedAt||0)) saveProgress();
-      } else if (progress.updatedAt) saveProgress();
-    }
-  }catch(e){ /* stay local */ }
+    const r = await fetch(API, {cache:"no-store", headers:Object.assign({Accept:"application/vnd.github+json"}, authHeaders(tok))});
+    if (r.status === 401) return "GitHub didn't accept that token. Check you copied all of it.";
+    if (!r.ok) return `That token can't see ${REPO} (error ${r.status}). Make sure duo-teo is selected under repository access.`;
+    const j = await r.json();
+    if (!j.permissions || !j.permissions.push) return "That token can read the repo but can't save to it. Set Contents to Read and write.";
+    return null;
+  }catch(e){ return "Couldn't reach GitHub. Check the internet connection."; }
 }
-async function saveShared(){
-  saveLocal();
-  if (!db) return "local";
-  const body = {}; SHARED_KEYS.forEach(k => body[k] = settings[k]);
-  try{ await db.doc("shared/settings").set(body); return "cloud"; }
-  catch(e){ return "local"; }
+async function publishConfig(c){
+  const body = JSON.stringify(cleanConfig(c), null, 2) + "\n";
+  const hdr = extra => Object.assign({Accept:"application/vnd.github+json"}, authHeaders(), extra||{});
+  for (let attempt = 0; attempt < 3; attempt++){
+    let sha;
+    const g = await fetch(`${API}/contents/${CONFIG_PATH}?ref=${BRANCH}`, {cache:"no-store", headers:hdr()});
+    if (g.ok) sha = (await g.json()).sha;
+    else if (g.status === 401) throw new Error("Your parent sign-in stopped working (the token may have expired). Sign out and sign in with a new token.");
+    else if (g.status !== 404) throw new Error(`Couldn't read the word lists from GitHub (error ${g.status}).`);
+    const r = await fetch(`${API}/contents/${CONFIG_PATH}`, {method:"PUT", headers:hdr({"Content-Type":"application/json"}),
+      body: JSON.stringify(Object.assign({message:"Update word lists (parent mode)", content:b64(body), branch:BRANCH}, sha ? {sha} : {}))});
+    if (r.ok) return;
+    if (r.status === 401) throw new Error("Your parent sign-in stopped working (the token may have expired). Sign out and sign in with a new token.");
+    if (r.status === 403 || r.status === 404) throw new Error(`GitHub wouldn't save (error ${r.status}). The token needs Contents: Read and write on duo-teo.`);
+    if (r.status !== 409 && r.status !== 422) throw new Error(`Saving failed (error ${r.status}). Try again.`);
+    // 409/422: someone saved in between, so fetch the new version and retry
+  }
+  throw new Error("Saving failed. Try again.");
+}
+async function saveConfig(c, noteEl){
+  noteEl.style.color = ""; noteEl.textContent = "Saving to every device…";
+  try{
+    await publishConfig(c);
+    Object.assign(settings, cleanConfig(c)); saveLocal(); rebuild(); renderHome();
+    noteEl.textContent = "Saved ✓";
+    return true;
+  }catch(e){ noteEl.style.color = "var(--red-t)"; noteEl.textContent = e.message || "Saving failed."; return false; }
 }
 
 /* ---------- sound effects (optional; the game works silently) ---------- */
@@ -1000,7 +1049,7 @@ function finishLesson(){
   show("results"); confetti();
 }
 $("resContinue").onclick = () => { sfx.tap(); afterLesson(); show("home"); };
-function afterLesson(){ if (pendingShared){ applyShared(pendingShared); pendingShared = null; } renderHome(); }
+function afterLesson(){ if (pendingConfig){ const c = pendingConfig; pendingConfig = null; applyConfig(c); } renderHome(); fetchConfig(); }
 
 /* ---------- confetti ---------- */
 function confetti(){
@@ -1022,52 +1071,70 @@ function openGate(){
   $("gateQ").textContent = `What is ${a} × ${b}?`; $("gateIn").value = ""; $("gateNote").textContent = "";
   openOv("gateSheet"); setTimeout(()=>$("gateIn").focus(), 100);
 }
-$("gearBtn").onclick = () => { sfx.tap(); openGate(); };
+$("gearBtn").onclick = () => { sfx.tap(); adminToken ? openSettings() : openGate(); };   // the parent's own device skips the math question
 $("gateCancel").onclick = () => closeOv("gateSheet");
 function gateGo(){ if (+$("gateIn").value===gateAns){ closeOv("gateSheet"); openSettings(); } else { $("gateNote").textContent = "Not quite — try again."; $("gateIn").value=""; } }
 $("gateGo").onclick = gateGo;
 $("gateIn").addEventListener("keydown", e => { if (e.key==="Enter") gateGo(); });
 
 function openSettings(){
+  const parent = !!adminToken;
+  $("parentBar").style.display = parent ? "" : "none";
+  $("kidNote").style.display = parent ? "none" : "";
+  $("signinBox").style.display = "none";
   $("setName").value = settings.name || "";
   $("setPer").value = String(settings.perUnit);
   $("setSound").checked = !!settings.sound;
   $("setLock").checked = settings.lockOrder !== false;
-  $("setNote").textContent = ""; $("resetConfirm").style.display = "none"; $("resetBtn").style.display = "";
+  ["setName","setPer","setLock"].forEach(k => $(k).disabled = !parent);
+  $("addListBtn").style.display = parent ? "" : "none";
+  $("setNote").textContent = ""; $("setNote").style.color = "";
+  $("resetConfirm").style.display = "none"; $("resetBtn").style.display = "";
   renderListCards(); openOv("setSheet");
 }
 function renderListCards(){
   $("listCards").innerHTML = allLists().map((l,i) => {
     const n = parseWords(l.words).length;
     return `<button class="list-card" data-list="${esc(l.id)}"><span class="lc-n">${i+1}</span>
-      <span class="lc-t"><b>${esc(l.title)}</b><small>${n} word${n===1?"":"s"}${l.builtin?" · built in":""}</small></span>
-      <span class="lc-e">${l.builtin?"View":"Edit"}</span></button>`;
+      <span class="lc-t"><b>${esc(l.title)}</b><small>${n} word${n===1?"":"s"}</small></span>
+      <span class="lc-e">${adminToken?"Edit":"View"}</span></button>`;
   }).join("");
 }
 $("listCards").addEventListener("click", e => { const c = e.target.closest("[data-list]"); if (c){ sfx.tap(); openListEditor(c.dataset.list); } });
 $("addListBtn").onclick = () => { sfx.tap(); openListEditor(null); };
 $("setCancel").onclick = () => closeOv("setSheet");
 $("setSave").onclick = async () => {
-  settings.name = $("setName").value.trim();
-  settings.perUnit = parseInt($("setPer").value)||5;
-  settings.sound = $("setSound").checked;
-  settings.lockOrder = $("setLock").checked;
-  rebuild(); renderHome();
-  $("setNote").textContent = "Saving…";
-  const where = await saveShared();
-  $("setNote").textContent = where==="cloud" ? "Saved ✓" : "Saved ✓";
+  settings.sound = $("setSound").checked; saveLocal();
+  if (adminToken){
+    const c = Object.assign(configOf(settings), {name:$("setName").value.trim(), perUnit:parseInt($("setPer").value)||5, lockOrder:$("setLock").checked});
+    if (!same(c, configOf(settings)) && !(await saveConfig(c, $("setNote")))) return;
+  }
+  $("setNote").style.color = ""; $("setNote").textContent = "Saved ✓";
   setTimeout(()=>closeOv("setSheet"), 500);
 };
+// parent sign-in / out
+$("signInOpen").onclick = () => { $("signinBox").style.display = ""; $("kidNote").style.display = "none"; $("tokIn").value = ""; $("tokNote").textContent = ""; };
+$("tokCancel").onclick = () => { $("signinBox").style.display = "none"; $("kidNote").style.display = ""; };
+$("tokGo").onclick = async () => {
+  const tok = $("tokIn").value.trim();
+  if (!tok){ $("tokNote").textContent = "Paste the token first."; return; }
+  $("tokNote").style.color = ""; $("tokNote").textContent = "Checking with GitHub…";
+  const err = await verifyToken(tok);
+  if (err){ $("tokNote").style.color = "var(--red-t)"; $("tokNote").textContent = err; return; }
+  adminToken = tok; store.set("wq_admin_token", tok);
+  await fetchConfig(true); openSettings();
+};
+$("signOutBtn").onclick = () => { adminToken = null; try{ localStorage.removeItem("wq_admin_token"); }catch(e){} openSettings(); };
 
 let editingList = null;
 function openListEditor(id){
-  const l = id ? allLists().find(x => x.id===id) : {id:null, title:"", words:"", sentences:"", builtin:false};
+  const l = id ? allLists().find(x => x.id===id) : {id:null, title:"", words:"", sentences:""};
   if (!l) return;
   editingList = l;
   $("listTitle").value = l.title; $("listWords").value = l.words; $("listSents").value = l.sentences || "";
-  const ro = !!l.builtin;
+  const ro = !adminToken;
   ["listTitle","listWords","listSents"].forEach(k => $(k).readOnly = ro);
-  $("listHead").textContent = ro ? "Built-in list" : (id ? "Edit word list" : "New word list");
+  $("listHead").textContent = ro ? "Word list" : (id ? "Edit word list" : "New word list");
   $("listRoNote").style.display = ro ? "" : "none";
   $("listSave").style.display = ro ? "none" : "";
   $("listDelete").style.display = (!ro && id) ? "" : "none";
@@ -1087,21 +1154,23 @@ function backToSettings(){ closeOv("listSheet"); openSettings(); }
 $("listCancel").onclick = backToSettings;
 $("listSave").onclick = async () => {
   const words = $("listWords").value, sentences = $("listSents").value;
+  $("listNote").style.color = "var(--red-t)";
   if (!parseWords(words).length){ $("listNote").textContent = "Add at least one word."; return; }
-  const lists = (settings.lists||[]).slice();
-  const title = $("listTitle").value.trim() || ("List " + (allLists().length + (editingList.id ? 0 : 1)));
-  if (editingList.id){
-    const i = lists.findIndex(x => x.id===editingList.id);
-    if (i >= 0) lists[i] = Object.assign({}, lists[i], {title, words, sentences});
-  } else lists.push({id:"l" + Date.now().toString(36), title, words, sentences});
-  settings.lists = lists;
-  rebuild(); renderHome(); await saveShared(); backToSettings();
+  const c = configOf(settings);
+  if (!settings.lists.length) c.lists = JSON.parse(JSON.stringify(DEFAULT_CONFIG.lists));   // keep the starter list if it was only a default
+  const title = $("listTitle").value.trim() || ("List " + (editingList.id ? +editingList.id + 1 : c.lists.length + 1));
+  if (editingList.id) c.lists[+editingList.id] = {title, words, sentences};
+  else c.lists.push({title, words, sentences});
+  if (await saveConfig(c, $("listNote"))) setTimeout(backToSettings, 400);
 };
 $("listDelete").onclick = () => { $("listDelConfirm").style.display = ""; $("listDelete").style.display = "none"; };
 $("listDelNo").onclick = () => { $("listDelConfirm").style.display = "none"; $("listDelete").style.display = ""; };
 $("listDelYes").onclick = async () => {
-  settings.lists = (settings.lists||[]).filter(x => x.id !== editingList.id);
-  rebuild(); renderHome(); await saveShared(); backToSettings();
+  const c = configOf(settings);
+  if (!settings.lists.length) c.lists = JSON.parse(JSON.stringify(DEFAULT_CONFIG.lists));
+  c.lists.splice(+editingList.id, 1);
+  $("listDelConfirm").style.display = "none";
+  if (await saveConfig(c, $("listNote"))) setTimeout(backToSettings, 400);
 };
 $("resetBtn").onclick = () => { $("resetConfirm").style.display = ""; $("resetBtn").style.display = "none"; };
 $("resetNo").onclick = () => { $("resetConfirm").style.display = "none"; $("resetBtn").style.display = ""; };
@@ -1111,17 +1180,18 @@ $("resetYes").onclick = () => { progress = defaultProgress(); saveProgress(); re
 // Progress and the word list are saved in this browser (localStorage) after every lesson / settings change.
 // Ask the browser to keep that storage instead of clearing it when space runs low.
 try{ if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{}); }catch(e){}
-// Re-read saved data when the app comes back to the foreground (e.g. another tab played a lesson).
+// When the app comes back to the foreground: pick up progress from other tabs and fetch the latest word lists.
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState !== "visible" || L) return;
-  const p = store.get("wq_progress", null);
-  if (p && (p.updatedAt||0) > (progress.updatedAt||0)){ progress = Object.assign(defaultProgress(), p); }
-  const s = store.get("wq_settings", null);
-  if (s){ migrateSettings(s); if (SHARED_KEYS.some(k => s[k] !== undefined && !same(s[k], settings[k]))){ settings = Object.assign(settings, s); rebuild(); } }
-  renderHome();
+  if (document.visibilityState !== "visible") return;
+  if (!L){
+    const p = store.get("wq_progress", null);
+    if (p && (p.updatedAt||0) > (progress.updatedAt||0)){ progress = Object.assign(defaultProgress(), p); renderHome(); }
+  }
+  fetchConfig();
 });
 rebuild(); renderHome();
-initCloud();   // only does something when hosted as a claude.ai artifact
+fetchConfig(true);
+if (location.hash === "#parent"){ adminToken ? openSettings() : openGate(); }
 </script>
 </body>
 </html>

@@ -1,0 +1,12 @@
+{
+  "name": "Mateo",
+  "perUnit": 5,
+  "lockOrder": true,
+  "lists": [
+    {
+      "title": "Starter words",
+      "words": "cat, dog, sun, ball, apple, fish, tree, house, car, book, bird, star, moon, hat, cake, frog, duck, bus, egg, bed",
+      "sentences": ""
+    }
+  ]
+}

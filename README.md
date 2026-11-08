@@ -17,7 +17,7 @@ Word lists and game options (player name, words per unit, unlock order) live in 
 2. Paste a [fine-grained GitHub token](https://github.com/settings/personal-access-tokens/new) with *Only select repositories → duo-teo* and *Contents: Read and write*.
 3. Add, edit or delete lists and change options. Each save commits `lists.json` to this repo.
 
-The token stays in that browser only. On the kid's device, settings are read-only (behind a math question) apart from sound and resetting progress.
+The token stays in that browser only. On the kid's device, settings are read-only (behind a math question) apart from theme, sound and resetting progress.
 
 You can also edit `lists.json` directly on GitHub.
 
